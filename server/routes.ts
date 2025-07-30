@@ -1,7 +1,10 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { connectWalletSchema, signupEmailSchema, type ConnectWalletRequest, type SignupEmailRequest } from "@shared/schema";
+import { 
+  connectWalletSchema, signupEmailSchema, createReflectionSchema, updateMoodSchema,
+  type ConnectWalletRequest, type SignupEmailRequest, type CreateReflectionRequest, type UpdateMoodRequest 
+} from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -92,6 +95,134 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get user error:", error);
       res.status(500).json({ error: "Failed to get user" });
+    }
+  });
+
+  // Dashboard API Endpoints
+  
+  // GET /api/dashboard/:userId - Main dashboard data
+  app.get("/api/dashboard/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ error: "Invalid user ID" });
+      }
+
+      const dashboardData = await storage.getDashboardData(userId);
+      res.json(dashboardData);
+    } catch (error) {
+      console.error("Dashboard fetch error:", error);
+      res.status(500).json({ error: "Failed to load dashboard" });
+    }
+  });
+
+  // POST /api/dashboard/start-session - Track when user enters dashboard
+  app.post("/api/dashboard/start-session", async (req, res) => {
+    try {
+      const { userId } = req.body;
+      if (!userId) {
+        return res.status(400).json({ error: "User ID is required" });
+      }
+
+      const session = await storage.startUserSession(userId);
+      res.json({ sessionId: session.id });
+    } catch (error) {
+      console.error("Session start error:", error);
+      res.status(500).json({ error: "Failed to start session" });
+    }
+  });
+
+  // POST /api/reflections - Submit a reflection/thought
+  app.post("/api/reflections", async (req, res) => {
+    try {
+      console.log("Received reflection request:", req.body);
+      const validatedData = createReflectionSchema.parse(req.body);
+      const { userId, content, isAnonymous = true } = validatedData;
+
+      const reflection = await storage.createReflection(userId, content, isAnonymous);
+
+      res.json({ 
+        reflectionId: reflection.id,
+        message: "Reflection saved and shared with the network"
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        console.log("Validation error:", error.errors);
+        return res.status(400).json({ error: error.errors[0].message });
+      }
+      console.error("Reflection save error:", error);
+      res.status(500).json({ error: "Failed to save reflection" });
+    }
+  });
+
+  // GET /api/whispers - Get current network whispers
+  app.get("/api/whispers", async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
+      const whispers = await storage.getNetworkWhispers(limit);
+      res.json({ whispers });
+    } catch (error) {
+      console.error("Whispers fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch whispers" });
+    }
+  });
+
+  // POST /api/whispers/:whisperId/resonate - Add resonance to whisper
+  app.post("/api/whispers/:whisperId/resonate", async (req, res) => {
+    try {
+      const whisperId = parseInt(req.params.whisperId);
+      const { userId } = req.body;
+
+      if (isNaN(whisperId) || !userId) {
+        return res.status(400).json({ error: "Invalid whisper ID or user ID" });
+      }
+
+      await storage.addWhisperResonance(userId, whisperId);
+      res.json({ message: "Resonance added" });
+    } catch (error) {
+      console.error("Resonance add error:", error);
+      if (error instanceof Error && error.message === "Already resonated with this whisper") {
+        return res.status(409).json({ error: error.message });
+      }
+      res.status(500).json({ error: "Failed to add resonance" });
+    }
+  });
+
+  // DELETE /api/whispers/:whisperId/resonate - Remove resonance from whisper
+  app.delete("/api/whispers/:whisperId/resonate", async (req, res) => {
+    try {
+      const whisperId = parseInt(req.params.whisperId);
+      const { userId } = req.body;
+
+      if (isNaN(whisperId) || !userId) {
+        return res.status(400).json({ error: "Invalid whisper ID or user ID" });
+      }
+
+      const removed = await storage.removeWhisperResonance(userId, whisperId);
+      if (removed) {
+        res.json({ message: "Resonance removed" });
+      } else {
+        res.status(404).json({ error: "Resonance not found" });
+      }
+    } catch (error) {
+      console.error("Resonance remove error:", error);
+      res.status(500).json({ error: "Failed to remove resonance" });
+    }
+  });
+
+  // PUT /api/dashboard/mood - Update user's preferred mood
+  app.put("/api/dashboard/mood", async (req, res) => {
+    try {
+      const { userId, mood } = updateMoodSchema.parse(req.body);
+
+      await storage.updateUserMood(userId, mood);
+      res.json({ message: "Mood updated" });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid mood" });
+      }
+      console.error("Mood update error:", error);
+      res.status(500).json({ error: "Failed to update mood" });
     }
   });
 

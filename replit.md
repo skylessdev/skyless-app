@@ -38,14 +38,24 @@ Preferred communication style: Simple, everyday language.
 ## Key Components
 
 ### Database Schema
-- **Users Table**: Stores user information with support for wallet addresses, email, and connection types
+- **Users Table**: Core user data with identity vectors, growth tracking, and mood preferences
+- **User Sessions**: Track user activity with vector snapshots for growth calculation
+- **Reflections**: User thoughts and reflections that become network whispers
+- **Network Whispers**: Anonymous shared thoughts with resonance tracking
+- **Whisper Resonances**: Track which users resonate with which whispers
 - **Flexible Authentication**: Supports wallet-based, email-based, and anonymous connections
-- **Timestamps**: Automatic creation timestamps using PostgreSQL's CURRENT_TIMESTAMP
-- **Database Migration**: Successfully migrated from SQLite to PostgreSQL with Drizzle schema push
+- **Timestamps**: PostgreSQL timestamps with proper timezone handling
+- **Database Migration**: Successfully migrated from SQLite to PostgreSQL with full schema
 
 ### API Endpoints
 - `POST /api/connect-wallet`: Handles Web3 wallet connections
 - `POST /api/signup-email`: Manages email-based user registration
+- `GET /api/dashboard/:userId`: Main dashboard data with growth tracking
+- `POST /api/dashboard/start-session`: Track user session starts
+- `POST /api/reflections`: Submit reflections that become network whispers
+- `GET /api/whispers`: Get current network whispers with resonance counts
+- `POST /api/whispers/:id/resonate`: Add/remove resonance to whispers
+- `PUT /api/dashboard/mood`: Update user's preferred mood
 - Comprehensive error handling with Zod validation
 
 ### Frontend Components
@@ -66,7 +76,9 @@ Preferred communication style: Simple, everyday language.
 
 - **Wallet Integration**: Successfully implemented MetaMask wallet connection using Wagmi v2
 - **Database Migration**: Migrated from SQLite to PostgreSQL with Neon serverless driver
-- **Real Functionality**: All three connection methods (wallet, email, anonymous) are fully functional
+- **Dashboard Backend**: Complete backend foundation with whispers, reflections, and user growth tracking
+- **Real Data Flow**: All functionality uses authentic PostgreSQL data with no mocks or placeholders
+- **API Endpoints**: Full REST API for dashboard operations, reflections, and whisper resonance system
 - **UI Polish**: Glassmorphic design matches mockup exactly with smooth animations
 
 ## External Dependencies
