@@ -7,14 +7,16 @@ const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || 'demo-project
 export const config = createConfig({
   chains: [mainnet, sepolia],
   connectors: [
-    injected(),
+    injected({
+      target: 'metaMask'
+    }),
     walletConnect({ 
       projectId,
       metadata: {
         name: 'Skyless',
         description: 'Connect to the network',
-        url: 'https://skyless.app',
-        icons: ['https://skyless.app/icon.png']
+        url: typeof window !== 'undefined' ? window.location.origin : 'https://skyless.app',
+        icons: []
       }
     }),
   ],

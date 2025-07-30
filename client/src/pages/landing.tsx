@@ -81,6 +81,8 @@ export default function Landing() {
   };
 
   const handleConnectWallet = () => {
+    console.log('Wallet connect button clicked');
+    console.log('useWallet connect function:', connect);
     connect();
   };
 
@@ -188,6 +190,19 @@ export default function Landing() {
                   </span>
                 )}
               </Button>
+              
+              {/* Wallet installation prompt */}
+              <div className="text-xs text-white/50 text-center mt-2">
+                Need a wallet? Install{' '}
+                <a 
+                  href="https://metamask.io/download/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-white/70 underline hover:text-white transition-colors"
+                >
+                  MetaMask
+                </a>
+              </div>
 
               <Button
                 onClick={() => setCurrentView('email')}
