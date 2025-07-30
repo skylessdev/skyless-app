@@ -1,14 +1,14 @@
 import { sql } from "drizzle-orm";
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { pgTable, text, integer, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = sqliteTable("users", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const users = pgTable("users", {
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
   email: text("email").unique(),
   walletAddress: text("wallet_address").unique(),
   connectionType: text("connection_type", { enum: ["email", "wallet", "anonymous"] }).notNull(),
-  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({

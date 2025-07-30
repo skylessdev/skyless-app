@@ -1,25 +1,6 @@
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
 import { users, type User, type InsertUser } from "@shared/schema";
+import { db } from "./db";
 import { eq } from "drizzle-orm";
-import path from "path";
-
-const sqlite = new Database(path.join(process.cwd(), "skyless.db"));
-const db = drizzle(sqlite);
-
-// Initialize database
-sqlite.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    email TEXT UNIQUE,
-    wallet_address TEXT UNIQUE,
-    connection_type TEXT CHECK(connection_type IN ('email', 'wallet', 'anonymous')) NOT NULL,
-    created_at INTEGER DEFAULT (unixepoch()) NOT NULL
-  );
-  
-  CREATE INDEX IF NOT EXISTS idx_wallet_address ON users(wallet_address);
-  CREATE INDEX IF NOT EXISTS idx_email ON users(email);
-`);
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -29,7 +10,7 @@ export interface IStorage {
   getAllUsers(): Promise<User[]>;
 }
 
-export class SQLiteStorage implements IStorage {
+export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
     const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
     return result[0];
@@ -55,4 +36,4 @@ export class SQLiteStorage implements IStorage {
   }
 }
 
-export const storage = new SQLiteStorage();
+export const storage = new DatabaseStorage();

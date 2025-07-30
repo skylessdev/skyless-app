@@ -23,7 +23,7 @@ Preferred communication style: Simple, everyday language.
 ### Backend Architecture
 - **Runtime**: Node.js with Express.js server
 - **Language**: TypeScript throughout the stack
-- **Database**: SQLite with Better-SQLite3 driver
+- **Database**: PostgreSQL with Neon serverless driver
 - **ORM**: Drizzle ORM for type-safe database operations
 - **Validation**: Zod schemas shared between client and server
 - **Session Management**: PostgreSQL-compatible session store (connect-pg-simple)
@@ -40,7 +40,8 @@ Preferred communication style: Simple, everyday language.
 ### Database Schema
 - **Users Table**: Stores user information with support for wallet addresses, email, and connection types
 - **Flexible Authentication**: Supports wallet-based, email-based, and anonymous connections
-- **Timestamps**: Automatic creation timestamps using SQLite's unixepoch()
+- **Timestamps**: Automatic creation timestamps using PostgreSQL's CURRENT_TIMESTAMP
+- **Database Migration**: Successfully migrated from SQLite to PostgreSQL with Drizzle schema push
 
 ### API Endpoints
 - `POST /api/connect-wallet`: Handles Web3 wallet connections
@@ -57,9 +58,16 @@ Preferred communication style: Simple, everyday language.
 
 1. **User Interaction**: Users can choose to connect via wallet, email, or explore anonymously
 2. **Validation**: All inputs are validated using Zod schemas on both client and server
-3. **Database Operations**: User data is stored in SQLite using Drizzle ORM
+3. **Database Operations**: User data is stored in PostgreSQL using Drizzle ORM
 4. **State Management**: React Query manages server state and caching
 5. **UI Updates**: Framer Motion provides smooth transitions between states
+
+## Recent Changes (January 30, 2025)
+
+- **Wallet Integration**: Successfully implemented MetaMask wallet connection using Wagmi v2
+- **Database Migration**: Migrated from SQLite to PostgreSQL with Neon serverless driver
+- **Real Functionality**: All three connection methods (wallet, email, anonymous) are fully functional
+- **UI Polish**: Glassmorphic design matches mockup exactly with smooth animations
 
 ## External Dependencies
 
