@@ -100,10 +100,11 @@ export default function Landing() {
 
   // Auto-update view when wallet connects
   React.useEffect(() => {
-    if (isConnected && !isRegistering) {
+    if (isConnected && address && !isRegistering) {
+      console.log('Wallet connected, updating view to connected state');
       setCurrentView('connected');
     }
-  }, [isConnected, isRegistering]);
+  }, [isConnected, address, isRegistering]);
 
   return (
     <div className="min-h-screen bg-dark-bg text-white font-inter overflow-x-hidden">

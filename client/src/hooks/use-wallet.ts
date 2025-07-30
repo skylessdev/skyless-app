@@ -20,6 +20,7 @@ export function useWallet() {
       return response.json();
     },
     onSuccess: (data) => {
+      console.log('Wallet registration successful:', data);
       toast({
         title: "Wallet Connected",
         description: `${data.user.walletAddress.slice(0, 6)}...${data.user.walletAddress.slice(-4)}`,
@@ -66,13 +67,19 @@ export function useWallet() {
     disconnect();
   };
 
-  // Auto-register wallet when connected
+  // Auto-register wallet when connected (only once)
+  const [hasRegistered, setHasRegistered] = React.useState(false);
+  
   React.useEffect(() => {
-    if (isConnected && address && !connectWalletMutation.isPending) {
+    if (isConnected && address && !connectWalletMutation.isPending && !hasRegistered) {
       console.log('Auto-registering wallet:', address);
       connectWalletMutation.mutate(address);
+      setHasRegistered(true);
     }
-  }, [isConnected, address, connectWalletMutation]);
+    if (!isConnected) {
+      setHasRegistered(false);
+    }
+  }, [isConnected, address, connectWalletMutation.isPending, hasRegistered]);
 
   return {
     address,
