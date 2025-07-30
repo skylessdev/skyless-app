@@ -136,7 +136,7 @@ export default function Landing() {
         transition={{ duration: 0.6 }}
         className="px-6 py-8 text-center"
       >
-        <h1 className="text-lg font-light tracking-wide text-white/90">skyless.app</h1>
+        <h1 className="text-lg font-light tracking-wide text-white/90" style={{ fontFamily: 'Georgia, serif' }}>skyless</h1>
       </motion.header>
 
       {/* Main Content */}
