@@ -314,12 +314,11 @@ export default function Landing() {
                 <p className="text-sm text-white/60 font-mono break-all">
                   {address && `${address.slice(0, 6)}...${address.slice(-4)}`}
                 </p>
-                <Button
-                  onClick={() => setCurrentView('success')}
-                  className="glass-button w-full py-3 rounded-2xl text-base font-medium tracking-wide"
-                >
-                  enter app
-                </Button>
+                <Link href="/dashboard" className="block w-full">
+                  <Button className="glass-button w-full py-3 rounded-2xl text-base font-medium tracking-wide">
+                    enter app
+                  </Button>
+                </Link>
               </div>
             </motion.div>
           )}
