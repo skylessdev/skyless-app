@@ -4,7 +4,6 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { injected } from 'wagmi/connectors';
-import { detectWallet } from '@/lib/wallet-utils';
 
 export function useWallet() {
   const { address, isConnected, isConnecting } = useAccount();
@@ -50,43 +49,26 @@ export function useWallet() {
   const handleConnect = async () => {
     try {
       console.log('Attempting to connect wallet...');
-      
-      // Detect available wallet
-      const walletInfo = detectWallet();
-      
-      if (!walletInfo.isAvailable) {
+      // Check if MetaMask is installed
+      if (typeof window !== 'undefined' && !window.ethereum) {
         toast({
           variant: "destructive",
-          title: "No Wallet Found", 
-          description: "Please install MetaMask or another wallet extension to continue",
+          title: "No Wallet Found",
+          description: "Please install MetaMask or another wallet extension",
         });
         return;
       }
       
-      console.log(`Detected wallet: ${walletInfo.name}`);
-      
-      // Try to connect with the injected provider
-      const connector = injected();
+      const connector = injected({ target: 'metaMask' });
       console.log('Connector created:', connector);
       await connect({ connector });
       console.log('Connect called successfully');
     } catch (error: any) {
       console.error('Wallet connection error:', error);
-      
-      // Better error handling based on error type
-      let errorMessage = "Please try again";
-      if (error.message?.includes('User rejected') || error.code === 4001) {
-        errorMessage = "Connection was cancelled. Please try again when ready.";
-      } else if (error.message?.includes('No provider') || error.message?.includes('provider')) {
-        errorMessage = "Please install MetaMask or another wallet extension";
-      } else if (error.message?.includes('already pending')) {
-        errorMessage = "Connection already in progress. Please check your wallet.";
-      }
-      
       toast({
         variant: "destructive",
         title: "Connection Failed",
-        description: errorMessage,
+        description: error.message || "Please make sure you have MetaMask installed and try again",
       });
     }
   };
