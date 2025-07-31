@@ -9,6 +9,37 @@ import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
+  // Email signup endpoint
+  app.post("/api/signup-email", async (req, res) => {
+    try {
+      const { email }: SignupEmailRequest = signupEmailSchema.parse(req.body);
+      
+      // Check if email already exists
+      let user = await storage.getUserByEmail(email);
+      if (!user) {
+        // Create new user
+        user = await storage.createUser({
+          email,
+          connectionType: "email",  // ✅ Set to "email"
+          walletAddress: null,      // ✅ Wallet is null
+        });
+      }
+
+      res.json({ 
+        user_id: user.id,
+        email: user.email,
+        connection_type: 'email',
+        message: "Email registered successfully" 
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid email format" });
+      }
+      console.error("Email signup error:", error);
+      res.status(500).json({ error: "Failed to register email" });
+    }
+  });
+
   // Connect wallet endpoint
   app.post("/api/connect-wallet", async (req, res) => {
     try {
