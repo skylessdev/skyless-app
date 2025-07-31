@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation } from '@tanstack/react-query';
 import { Wallet, Mail, EyeOff, Loader2, CheckCircle } from 'lucide-react';
+import { Link } from 'wouter';
 
 import { Logo } from '@/components/ui/logo';
 import { Button } from '@/components/ui/button';
