@@ -15,19 +15,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { walletAddress }: ConnectWalletRequest = connectWalletSchema.parse(req.body);
       
       // Check if wallet already exists
-      const existingUser = await storage.getUserByWallet(walletAddress);
-      if (existingUser) {
-        return res.json({ user: existingUser, message: "Wallet already connected" });
+      let user = await storage.getUserByWallet(walletAddress);
+      if (!user) {
+        // Create new user
+        user = await storage.createUser({
+          walletAddress,
+          connectionType: "wallet",
+          email: null,
+        });
       }
 
-      // Create new user
-      const user = await storage.createUser({
-        walletAddress,
-        connectionType: "wallet",
-        email: null,
+      res.json({ 
+        user_id: user.id,
+        wallet_address: user.walletAddress,
+        connection_type: 'wallet',
+        message: "Wallet connected successfully" 
       });
-
-      res.json({ user, message: "Wallet connected successfully" });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Invalid wallet address format" });
@@ -43,19 +46,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { email }: SignupEmailRequest = signupEmailSchema.parse(req.body);
       
       // Check if email already exists
-      const existingUser = await storage.getUserByEmail(email);
-      if (existingUser) {
-        return res.json({ user: existingUser, message: "Email already registered" });
+      let user = await storage.getUserByEmail(email);
+      if (!user) {
+        // Create new user
+        user = await storage.createUser({
+          email,
+          connectionType: "email",
+          walletAddress: null,
+        });
       }
 
-      // Create new user
-      const user = await storage.createUser({
-        email,
-        connectionType: "email",
-        walletAddress: null,
+      res.json({ 
+        user_id: user.id,
+        email: user.email,
+        connection_type: 'email',
+        message: "Email registered successfully" 
       });
-
-      res.json({ user, message: "Email registered successfully" });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Invalid email format" });
@@ -68,13 +74,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Anonymous session endpoint
   app.post("/api/anonymous-session", async (req, res) => {
     try {
+      const anonymousId = `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
       const user = await storage.createUser({
         connectionType: "anonymous",
         email: null,
         walletAddress: null,
       });
 
-      res.json({ user, message: "Anonymous session created" });
+      res.json({ 
+        user_id: user.id,
+        anonymous_id: anonymousId,
+        connection_type: 'anonymous',
+        message: "Anonymous session created" 
+      });
     } catch (error) {
       console.error("Anonymous session error:", error);
       res.status(500).json({ error: "Failed to create anonymous session" });

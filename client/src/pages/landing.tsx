@@ -39,12 +39,15 @@ export default function Landing() {
       const response = await apiRequest('POST', '/api/signup-email', data);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "Email Registered",
         description: "Successfully signed up with email",
       });
-      setCurrentView('success');
+      // Store user ID for dashboard access
+      localStorage.setItem('skyless_user_id', data.user_id.toString());
+      // Direct redirect to dashboard
+      window.location.href = '/dashboard';
     },
     onError: (error) => {
       toast({
@@ -60,12 +63,15 @@ export default function Landing() {
       const response = await apiRequest('POST', '/api/anonymous-session', {});
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "Anonymous Session",
         description: "Successfully created anonymous session",
       });
-      setCurrentView('success');
+      // Store user ID for dashboard access
+      localStorage.setItem('skyless_user_id', data.user_id.toString());
+      // Direct redirect to dashboard
+      window.location.href = '/dashboard';
     },
     onError: (error) => {
       toast({
@@ -77,7 +83,15 @@ export default function Landing() {
   });
 
   const handleEnter = () => {
-    setCurrentView('options');
+    const userId = localStorage.getItem('skyless_user_id');
+    
+    if (userId) {
+      // User already connected, go to dashboard
+      window.location.href = '/dashboard';
+    } else {
+      // Show connection options
+      setCurrentView('options');
+    }
   };
 
   const handleConnectWallet = () => {

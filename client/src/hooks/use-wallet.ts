@@ -21,11 +21,21 @@ export function useWallet() {
     },
     onSuccess: (data) => {
       console.log('Wallet registration successful:', data);
+      
+      // Store user ID for dashboard access
+      localStorage.setItem('skyless_user_id', data.user_id.toString());
+      
       toast({
         title: "Wallet Connected",
-        description: `${data.user.walletAddress.slice(0, 6)}...${data.user.walletAddress.slice(-4)}`,
+        description: `${data.wallet_address.slice(0, 6)}...${data.wallet_address.slice(-4)}`,
       });
+      
       queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+      
+      // Direct redirect to dashboard
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 1500);
     },
     onError: (error) => {
       toast({

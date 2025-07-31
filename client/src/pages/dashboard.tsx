@@ -34,7 +34,15 @@ interface NetworkWhisper {
 }
 
 export default function Dashboard() {
-  const [userId] = React.useState(1); // In real app, this would come from auth context
+  // Get user ID from localStorage or redirect to landing
+  const [userId] = React.useState(() => {
+    const storedUserId = localStorage.getItem('skyless_user_id');
+    if (!storedUserId) {
+      window.location.href = '/';
+      return null;
+    }
+    return parseInt(storedUserId);
+  });
   const [reflectionContent, setReflectionContent] = React.useState('');
   const [showReflectionForm, setShowReflectionForm] = React.useState(false);
   const { toast } = useToast();
@@ -133,15 +141,25 @@ export default function Dashboard() {
     return Math.round(vector.reduce((sum, val) => sum + val, 0) / vector.length * 100);
   };
 
-  if (isLoading) {
+  if (isLoading || !userId) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center" style={{ fontFamily: 'Georgia, serif' }}>
         <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-blue-200 text-xl"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center"
         >
-          Loading your space...
+          <div className="mb-6">
+            <div className="w-10 h-10 border-2 border-white/20 border-t-white/60 rounded-full animate-spin"></div>
+          </div>
+          <div className="text-white/80 text-lg font-light tracking-wide mb-4">
+            Loading your space
+          </div>
+          <div className="flex gap-2">
+            <div className="w-2 h-2 bg-white/60 rounded-full animate-pulse"></div>
+            <div className="w-2 h-2 bg-white/60 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+            <div className="w-2 h-2 bg-white/60 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+          </div>
         </motion.div>
       </div>
     );
