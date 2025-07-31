@@ -151,7 +151,7 @@ export default function Landing() {
         transition={{ duration: 0.6 }}
         className="px-6 py-8 text-center"
       >
-        <h1 className="text-lg font-light tracking-wide text-white/90" style={{ fontFamily: 'Georgia, serif' }}>skyless</h1>
+        <h1 className="text-lg font-light tracking-wide text-white/90 italic" style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', letterSpacing: '0.5px' }}>skyless</h1>
       </motion.header>
 
       {/* Main Content */}
@@ -170,9 +170,10 @@ export default function Landing() {
               <Logo />
               <Button
                 onClick={handleEnter}
-                className="glass-button px-12 py-3 rounded-full text-base font-medium tracking-wide"
+                className="glass-button px-12 py-3 rounded-full text-base font-medium tracking-wide italic"
+                style={{ fontStyle: 'italic' }}
               >
-                enter
+                begin
               </Button>
             </motion.div>
           )}
@@ -187,7 +188,7 @@ export default function Landing() {
               className="w-full max-w-sm space-y-4"
             >
               <h2 className="text-xl font-light text-center mb-8 tracking-wide">
-                connect to the network
+                connect to the space
               </h2>
               
               <Button
@@ -203,7 +204,7 @@ export default function Landing() {
                 ) : (
                   <span className="flex items-center justify-center space-x-3">
                     <Wallet className="w-5 h-5" />
-                    <span>connect wallet</span>
+                    <span>verify identity</span>
                   </span>
                 )}
               </Button>
@@ -227,7 +228,7 @@ export default function Landing() {
               >
                 <span className="flex items-center justify-center space-x-3">
                   <Mail className="w-5 h-5" />
-                  <span>sign in with email</span>
+                  <span>join with email</span>
                 </span>
               </Button>
 
@@ -244,7 +245,7 @@ export default function Landing() {
                 ) : (
                   <span className="flex items-center justify-center space-x-3">
                     <EyeOff className="w-5 h-5" />
-                    <span>explore anonymously</span>
+                    <span>explore quietly</span>
                   </span>
                 )}
               </Button>
@@ -261,8 +262,8 @@ export default function Landing() {
               className="w-full max-w-sm space-y-6"
             >
               <div className="text-center">
-                <h2 className="text-xl font-light mb-2 tracking-wide">sign in with email</h2>
-                <p className="text-sm text-white/60">Enter your email to connect to the network</p>
+                <h2 className="text-xl font-light mb-2 tracking-wide">join with email</h2>
+                <p className="text-sm text-white/60">Enter your email to establish presence</p>
               </div>
               
               <Form {...form}>
