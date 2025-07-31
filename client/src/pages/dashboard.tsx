@@ -188,11 +188,10 @@ export default function Dashboard() {
             </Link>
             <div>
               <h1 className="text-2xl font-light text-white tracking-wide">
-                welcome home
+                Your Space
               </h1>
               <p className="text-white/60 text-sm">
-                {dashboardData?.user.connectionType === 'wallet' ? 'identity verified' : 
-                 dashboardData?.user.connectionType === 'email' ? 'presence established' : 'exploring quietly'}
+                {dashboardData?.user.connectionType === 'wallet' ? 'Connected via Wallet' : 'Anonymous Explorer'}
               </p>
             </div>
           </div>
@@ -216,7 +215,7 @@ export default function Dashboard() {
             <CardContent className="p-6">
               <div className="flex items-center gap-3 mb-2">
                 <Sparkles className="w-5 h-5 text-white/70" />
-                <h3 className="text-lg font-light text-white/70">inner alignment</h3>
+                <h3 className="text-lg font-light text-white/70">Coherence</h3>
               </div>
               <div className="text-3xl font-light text-white">
                 {calculateVectorStrength(dashboardData?.user.identityVector || [])}%
@@ -234,7 +233,7 @@ export default function Dashboard() {
                 <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
                   <div className="w-2 h-2 rounded-full bg-white/70" />
                 </div>
-                <h3 className="text-lg font-light text-white/70">recent evolution</h3>
+                <h3 className="text-lg font-light text-white/70">Growth</h3>
               </div>
               <div className="text-3xl font-light text-white">
                 +{dashboardData?.growthSinceLast || 0}%
@@ -252,7 +251,7 @@ export default function Dashboard() {
                 <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
                   <div className="w-2 h-2 rounded-full bg-white/70" />
                 </div>
-                <h3 className="text-lg font-light text-white/70">current resonance</h3>
+                <h3 className="text-lg font-light text-white/70">Mood</h3>
               </div>
               <div className="text-xl font-light text-white capitalize">
                 {dashboardData?.user.preferredMood || 'contemplative'}
@@ -280,7 +279,7 @@ export default function Dashboard() {
                   className="w-full justify-start text-white/40 hover:text-white/70"
                 >
                   <Plus className="w-4 h-4 mr-2" />
-                  what's shifting in you?
+                  Share a reflection with the network...
                 </Button>
               </CardContent>
             </Card>
@@ -288,7 +287,7 @@ export default function Dashboard() {
             <Card className="bg-white/5 backdrop-blur-xl border-white/10">
               <CardContent className="p-6">
                 <Textarea
-                  placeholder="share something true…"
+                  placeholder="What's on your mind? This will be shared anonymously with the network..."
                   value={reflectionContent}
                   onChange={(e) => setReflectionContent(e.target.value)}
                   className="bg-transparent border-white/20 text-white placeholder:text-white/40 resize-none min-h-[100px] mb-4 font-serif"
@@ -332,7 +331,7 @@ export default function Dashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <h2 className="text-xl font-light mb-4 text-white/80 italic" style={{ fontStyle: 'italic', letterSpacing: '0.5px' }}>voices in the space</h2>
+          <h2 className="text-xl font-light mb-4 text-white/80">Network Whispers</h2>
           <div className="space-y-4">
             {whispersData?.whispers?.map((whisper, index) => (
               <motion.div
@@ -341,33 +340,34 @@ export default function Dashboard() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.1 * index }}
               >
-                <div className="whisper">
-                  <p className="whisper-content" style={{ fontFamily: 'Georgia, serif' }}>
-                    {whisper.content}
-                  </p>
-                  <div className="whisper-timestamp">
-                    {new Date(whisper.createdAt).toLocaleDateString()}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleResonate(whisper.id)}
-                    disabled={resonateMutation.isPending}
-                    className="resonate-btn"
-                  >
-                    <img
-                      src={whisper.userHasResonated ? "/heart-filled.png" : "/heart.png"}
-                      alt={whisper.userHasResonated ? "Remove resonance" : "Resonate"}
-                      width={20}
-                      height={20}
-                      className={`transition-all group-hover:scale-110 ${whisper.userHasResonated ? 'opacity-100' : 'opacity-70'}`}
-                    />
-                    {whisper.resonanceCount}
-                  </Button>
-                  <div className="whisper-signature">
-                    — skyless
-                  </div>
-                </div>
+                <Card className="bg-white/5 backdrop-blur-xl border-white/10 hover:bg-white/8 hover:border-white/20 transition-all">
+                  <CardContent className="p-6">
+                    <p className="text-white/90 mb-4 leading-relaxed font-serif" style={{ fontFamily: 'Georgia, serif' }}>
+                      {whisper.content}
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-white/40">
+                        {new Date(whisper.createdAt).toLocaleDateString()}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleResonate(whisper.id)}
+                        disabled={resonateMutation.isPending}
+                        className="text-blue-400 hover:text-blue-300 transition-colors group flex items-center gap-1 p-2 rounded-md hover:bg-blue-400/10"
+                      >
+                        <img
+                          src={whisper.userHasResonated ? "/heart-filled.png" : "/heart.png"}
+                          alt={whisper.userHasResonated ? "Remove resonance" : "Resonate"}
+                          width={20}
+                          height={20}
+                          className={`transition-all group-hover:scale-110 ${whisper.userHasResonated ? 'opacity-100' : 'opacity-70'}`}
+                        />
+                        {whisper.resonanceCount}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
               </motion.div>
             ))}
             
