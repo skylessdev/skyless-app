@@ -1,0 +1,784 @@
+You’re absolutely right! The resonance logic needs to be a toggle (like/unlike) and the heart should visually change when resonated. Let me fix both issues:
+
+## Backend API Fix - Toggle Resonance
+
+// Complete Whisper API with Resonance
+
+// POST /api/reflections - Every reflection becomes a whisper
+app.post(’/api/reflections’, async (req, res) => {
+try {
+const { userId, content } = req.body;
+
+```
+if (!content || content.trim().length === 0) {
+  return res.status(400).json({ error: 'Content is required' });
+}
+
+// Simple vector delta (integrate with Skyla later)
+const vectorDelta = [0, 0, 0, 0.1];
+
+// 1. Save reflection
+const reflection = await db.insert(reflections).values({
+  user_id: userId,
+  content: content.trim(),
+  is_anonymous: true, // All whispers are anonymous
+  vector_delta: vectorDelta,
+  is_whisper: true,   // Every reflection becomes whisper
+  created_at: new Date()
+}).returning();
+
+// 2. Automatically create network whisper
+await db.insert(network_whispers).values({
+  content: content.trim(),
+  source_reflection_id: reflection[0].id,
+  resonance_count: 0,
+  created_at: new Date()
+});
+
+// 3. Update user's identity vector
+const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+const currentVector = user[0].identity_vector;
+const newVector = currentVector.map((val, i) => 
+  Math.max(0, Math.min(1, val + vectorDelta[i]))
+);
+
+await db.update(users)
+  .set({ identity_vector: newVector })
+  .where(eq(users.id, userId));
+
+res.json({ 
+  reflection_id: reflection[0].id,
+  new_vector: newVector,
+  message: 'Shared with the network'
+});
+```
+
+} catch (error) {
+console.error(‘Reflection save error:’, error);
+res.status(500).json({ error: ‘Failed to save reflection’ });
+}
+});
+
+// GET /api/whispers/:userId - Get whispers with user’s resonance status
+app.get(’/api/whispers/:userId’, async (req, res) => {
+try {
+const userId = parseInt(req.params.userId);
+
+```
+// Get 3 most recent whispers with resonance counts
+const whispersQuery = `
+  SELECT 
+    nw.id,
+    nw.content,
+    nw.resonance_count,
+    nw.created_at,
+    CASE WHEN wr.user_id IS NOT NULL THEN true ELSE false END as user_has_resonated
+  FROM network_whispers nw
+  LEFT JOIN whisper_resonances wr ON nw.id = wr.whisper_id AND wr.user_id = $1
+  WHERE nw.is_active = true
+  ORDER BY nw.created_at DESC
+  LIMIT 3
+`;
+
+const whispers = await db.raw(whispersQuery, [userId]);
+
+res.json({ 
+  whispers: whispers.rows.map(w => ({
+    id: w.id,
+    content: w.content,
+    resonance_count: w.resonance_count,
+    user_has_resonated: w.user_has_resonated,
+    created_at: w.created_at
+  }))
+});
+```
+
+} catch (error) {
+console.error(‘Whispers fetch error:’, error);
+res.status(500).json({ error: ‘Failed to fetch whispers’ });
+}
+});
+
+// POST /api/whispers/:whisperId/resonate - Toggle resonance
+app.post(’/api/whispers/:whisperId/resonate’, async (req, res) => {
+try {
+const whisperId = parseInt(req.params.whisperId);
+const { userId } = req.body;
+
+```
+// Validate inputs
+if (!whisperId || !userId) {
+  return res.status(400).json({ error: 'Missing whisperId or userId' });
+}
+
+// Check if whisper exists
+const whisper = await db
+  .select()
+  .from(network_whispers)
+  .where(eq(network_whispers.id, whisperId))
+  .limit(1);
+  
+if (!whisper.length) {
+  return res.status(404).json({ error: 'Whisper not found' });
+}
+
+// Check if user already resonated
+const existingResonance = await db
+  .select()
+  .from(whisper_resonances)
+  .where(eq(whisper_resonances.whisper_id, whisperId))
+  .where(eq(whisper_resonances.user_id, userId))
+  .limit(1);
+
+if (existingResonance.length > 0) {
+  // Remove resonance (un-resonate)
+  await db
+    .delete(whisper_resonances)
+    .where(eq(whisper_resonances.whisper_id, whisperId))
+    .where(eq(whisper_resonances.user_id, userId));
+  
+  // Get updated whisper data
+  const updatedWhisper = await db
+    .select()
+    .from(network_whispers)
+    .where(eq(network_whispers.id, whisperId))
+    .limit(1);
+  
+  res.json({ 
+    success: true,
+    resonated: false,
+    new_count: updatedWhisper[0].resonance_count,
+    message: 'Resonance removed'
+  });
+  
+} else {
+  // Add resonance
+  await db.insert(whisper_resonances).values({
+    user_id: userId,
+    whisper_id: whisperId,
+    created_at: new Date()
+  });
+  
+  // Get updated whisper data  
+  const updatedWhisper = await db
+    .select()
+    .from(network_whispers)
+    .where(eq(network_whispers.id, whisperId))
+    .limit(1);
+  
+  res.json({ 
+    success: true,
+    resonated: true,
+    new_count: updatedWhisper[0].resonance_count,
+    message: 'Resonance added'
+  });
+}
+```
+
+} catch (error) {
+console.error(‘Resonance toggle error:’, error);
+res.status(500).json({
+success: false,
+error: ‘Failed to toggle resonance’,
+details: error.message
+});
+}
+});
+
+// GET /api/dashboard/:userId - Updated to include whispers with resonance
+app.get(’/api/dashboard/:userId’, async (req, res) => {
+try {
+const userId = parseInt(req.params.userId);
+
+```
+// Get user data
+const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+if (!user.length) {
+  return res.status(404).json({ error: 'User not found' });
+}
+
+// Get whispers with user's resonance status
+const whispersQuery = `
+  SELECT 
+    nw.id,
+    nw.content,
+    nw.resonance_count,
+    nw.created_at,
+    CASE WHEN wr.user_id IS NOT NULL THEN true ELSE false END as user_has_resonated
+  FROM network_whispers nw
+  LEFT JOIN whisper_resonances wr ON nw.id = wr.whisper_id AND wr.user_id = $1
+  WHERE nw.is_active = true
+  ORDER BY nw.created_at DESC
+  LIMIT 3
+`;
+
+const whispers = await db.raw(whispersQuery, [userId]);
+
+// Calculate growth (placeholder)
+const growthPercentage = Math.floor(Math.random() * 15) + 5; // 5-20% for now
+
+res.json({
+  user: {
+    id: user[0].id,
+    identity_vector: user[0].identity_vector,
+    preferred_mood: user[0].preferred_mood || 'contemplative'
+  },
+  growth_since_last: growthPercentage,
+  whispers: whispers.rows.map(w => ({
+    id: w.id,
+    content: w.content,
+    resonance_count: w.resonance_count,
+    user_has_resonated: w.user_has_resonated,
+    time_ago: formatTimeAgo(w.created_at)
+  }))
+});
+```
+
+} catch (error) {
+console.error(‘Dashboard fetch error:’, error);
+res.status(500).json({ error: ‘Failed to load dashboard’ });
+}
+});
+
+// Helper function for time formatting
+function formatTimeAgo(date) {
+const now = new Date();
+const diff = now - new Date(date);
+const minutes = Math.floor(diff / 60000);
+const hours = Math.floor(diff / 3600000);
+
+if (minutes < 60) return `${minutes}m`;
+if (hours < 24) return `${hours}h`;
+return `${Math.floor(hours / 24)}d`;
+}
+
+## Frontend Logic Fix - Proper Toggle with Visual Feedback
+
+// Heart Icon Component using uploaded PNG files
+const HeartIcon = ({ filled, size = 20 }: { filled: boolean; size?: number }) => {
+return (
+<img
+src={filled ? “/heart-filled.png” : “/heart.png”}
+alt={filled ? “Resonated” : “Resonate”}
+width={size}
+height={size}
+style={{
+filter: filled ? “none” : “opacity(0.7)”,
+transition: “all 0.2s ease”
+}}
+/>
+);
+};
+
+// Dashboard Component
+id: number;
+content: string;
+resonance_count: number;
+user_has_resonated: boolean;
+time_ago: string;
+}
+
+interface DashboardData {
+user: {
+id: number;
+identity_vector: number[];
+preferred_mood: string;
+};
+growth_since_last: number;
+whispers: Whisper[];
+}
+
+// Dashboard Component
+const Dashboard = ({ userId }: { userId: number }) => {
+const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+const [reflection, setReflection] = useState(’’);
+const [isSubmitting, setIsSubmitting] = useState(false);
+
+// Load dashboard data
+useEffect(() => {
+loadDashboard();
+}, [userId]);
+
+const loadDashboard = async () => {
+try {
+const response = await fetch(`/api/dashboard/${userId}`);
+const data = await response.json();
+setDashboardData(data);
+} catch (error) {
+console.error(‘Failed to load dashboard:’, error);
+}
+};
+
+// Submit reflection (automatically becomes whisper)
+const submitReflection = async () => {
+if (!reflection.trim() || isSubmitting) return;
+
+```
+setIsSubmitting(true);
+try {
+  const response = await fetch('/api/reflections', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      userId,
+      content: reflection.trim()
+    })
+  });
+  
+  if (response.ok) {
+    setReflection('');
+    // Reload dashboard to show updated vector and new whispers
+    await loadDashboard();
+  }
+} catch (error) {
+  console.error('Failed to submit reflection:', error);
+} finally {
+  setIsSubmitting(false);
+}
+```
+
+};
+
+// Toggle resonance on whisper
+const toggleResonance = async (whisperId: number) => {
+try {
+const response = await fetch(`/api/whispers/${whisperId}/resonate`, {
+method: ‘POST’,
+headers: { ‘Content-Type’: ‘application/json’ },
+body: JSON.stringify({ userId })
+});
+
+```
+  const result = await response.json();
+  
+  if (result.success) {
+    // Update local state immediately for responsive UI
+    setDashboardData(prev => ({
+      ...prev!,
+      whispers: prev!.whispers.map(whisper =>
+        whisper.id === whisperId
+          ? {
+              ...whisper,
+              user_has_resonated: result.resonated,
+              resonance_count: result.new_count
+            }
+          : whisper
+      )
+    }));
+  } else {
+    // Handle API error
+    console.error('Resonance toggle failed:', result.error);
+    // Optionally show user-friendly error message
+    alert(result.error || 'Failed to update resonance');
+  }
+} catch (error) {
+  console.error('Failed to toggle resonance:', error);
+  alert('Failed to update resonance. Please try again.');
+}
+```
+
+};
+
+if (!dashboardData) {
+return <div>Loading your space…</div>;
+}
+
+return (
+<div className="dashboard">
+{/* Welcome */}
+<h1>welcome back</h1>
+
+```
+  {/* Identity Vector Visualization */}
+  <IdentityVector vector={dashboardData.user.identity_vector} />
+  
+  {/* Growth Indicator */}
+  <p>you've grown {dashboardData.growth_since_last}% since last time</p>
+  
+  {/* Reflection Input */}
+  <div className="reflection-input">
+    <textarea
+      value={reflection}
+      onChange={(e) => setReflection(e.target.value)}
+      placeholder="what's on your mind?"
+      rows={3}
+    />
+    <button 
+      onClick={submitReflection}
+      disabled={isSubmitting || !reflection.trim()}
+    >
+      {isSubmitting ? 'sharing...' : 'submit'}
+    </button>
+  </div>
+  
+  {/* Network Whispers */}
+  <div className="whispers">
+    <p>whispers from the network:</p>
+    {dashboardData.whispers.map(whisper => (
+      <div key={whisper.id} className="whisper">
+        <p>{whisper.content}</p>
+        <div className="whisper-meta">
+          <button 
+            onClick={() => toggleResonance(whisper.id)}
+            className={`resonate-btn ${whisper.user_has_resonated ? 'resonated' : ''}`}
+          >
+            <HeartIcon filled={whisper.user_has_resonated} />
+            <span>{whisper.resonance_count}</span>
+          </button>
+          <span>{whisper.time_ago}</span>
+        </div>
+      </div>
+    ))}
+  </div>
+</div>
+```
+
+);
+};
+
+// Identity Vector Visualization Component  
+const IdentityVector = ({ vector }: { vector: number[] }) => {
+return (
+<div className="identity-vector">
+{vector.map((value, index) => (
+<div
+key={index}
+className=“vector-dot”
+style={{ opacity: value }}
+>
+{value > 0.5 ? ‘●’ : ‘○’}
+</div>
+))}
+</div>
+);
+};
+
+## Heart Icon Component - Proper File References
+
+// Heart Icon Component using uploaded PNG files
+const HeartIcon = ({ filled, size = 20 }: { filled: boolean; size?: number }) => {
+return (
+<img
+src={filled ? “/heart-filled.png” : “/heart.png”}
+alt={filled ? “Resonated” : “Resonate”}
+width={size}
+height={size}
+style={{
+transition: “all 0.2s ease”,
+opacity: filled ? 1 : 0.7,
+transform: filled ? “scale(1.1)” : “scale(1)”
+}}
+/>
+);
+};
+
+// Dashboard Component
+id: number;
+content: string;
+resonance_count: number;
+user_has_resonated: boolean;
+time_ago: string;
+}
+
+interface DashboardData {
+user: {
+id: number;
+identity_vector: number[];
+preferred_mood: string;
+};
+growth_since_last: number;
+whispers: Whisper[];
+}
+
+// Dashboard Component
+const Dashboard = ({ userId }: { userId: number }) => {
+const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+const [reflection, setReflection] = useState(’’);
+const [isSubmitting, setIsSubmitting] = useState(false);
+
+// Load dashboard data
+useEffect(() => {
+loadDashboard();
+}, [userId]);
+
+const loadDashboard = async () => {
+try {
+const response = await fetch(`/api/dashboard/${userId}`);
+const data = await response.json();
+setDashboardData(data);
+} catch (error) {
+console.error(‘Failed to load dashboard:’, error);
+}
+};
+
+// Submit reflection (automatically becomes whisper)
+const submitReflection = async () => {
+if (!reflection.trim() || isSubmitting) return;
+
+```
+setIsSubmitting(true);
+try {
+  const response = await fetch('/api/reflections', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      userId,
+      content: reflection.trim()
+    })
+  });
+  
+  if (response.ok) {
+    setReflection('');
+    // Reload dashboard to show updated vector and new whispers
+    await loadDashboard();
+  }
+} catch (error) {
+  console.error('Failed to submit reflection:', error);
+} finally {
+  setIsSubmitting(false);
+}
+```
+
+};
+
+// Toggle resonance on whisper
+const toggleResonance = async (whisperId: number) => {
+try {
+const response = await fetch(`/api/whispers/${whisperId}/resonate`, {
+method: ‘POST’,
+headers: { ‘Content-Type’: ‘application/json’ },
+body: JSON.stringify({ userId })
+});
+
+```
+  const result = await response.json();
+  
+  if (result.success) {
+    // Update local state immediately for responsive UI
+    setDashboardData(prev => ({
+      ...prev!,
+      whispers: prev!.whispers.map(whisper =>
+        whisper.id === whisperId
+          ? {
+              ...whisper,
+              user_has_resonated: result.resonated,
+              resonance_count: result.new_count
+            }
+          : whisper
+      )
+    }));
+  } else {
+    // Handle API error
+    console.error('Resonance toggle failed:', result.error);
+    // Optionally show user-friendly error message
+    alert(result.error || 'Failed to update resonance');
+  }
+} catch (error) {
+  console.error('Failed to toggle resonance:', error);
+  alert('Failed to update resonance. Please try again.');
+}
+```
+
+};
+
+if (!dashboardData) {
+return <div>Loading your space…</div>;
+}
+
+return (
+<div className="dashboard">
+{/* Welcome */}
+<h1>welcome back</h1>
+
+```
+  {/* Identity Vector Visualization */}
+  <IdentityVector vector={dashboardData.user.identity_vector} />
+  
+  {/* Growth Indicator */}
+  <p>you've grown {dashboardData.growth_since_last}% since last time</p>
+  
+  {/* Reflection Input */}
+  <div className="reflection-input">
+    <textarea
+      value={reflection}
+      onChange={(e) => setReflection(e.target.value)}
+      placeholder="what's on your mind?"
+      rows={3}
+    />
+    <button 
+      onClick={submitReflection}
+      disabled={isSubmitting || !reflection.trim()}
+    >
+      {isSubmitting ? 'sharing...' : 'submit'}
+    </button>
+  </div>
+  
+  {/* Network Whispers */}
+  <div className="whispers">
+    <p>whispers from the network:</p>
+    {dashboardData.whispers.map(whisper => (
+      <div key={whisper.id} className="whisper">
+        <p>{whisper.content}</p>
+        <div className="whisper-meta">
+          <button 
+            onClick={() => toggleResonance(whisper.id)}
+            className={`resonate-btn ${whisper.user_has_resonated ? 'resonated' : ''}`}
+          >
+            <HeartIcon filled={whisper.user_has_resonated} />
+            <span>{whisper.resonance_count}</span>
+          </button>
+          <span>{whisper.time_ago}</span>
+        </div>
+      </div>
+    ))}
+  </div>
+</div>
+```
+
+);
+};
+
+// Identity Vector Visualization Component  
+const IdentityVector = ({ vector }: { vector: number[] }) => {
+return (
+<div className="identity-vector">
+{vector.map((value, index) => (
+<div
+key={index}
+className=“vector-dot”
+style={{ opacity: value }}
+>
+{value > 0.5 ? ‘●’ : ‘○’}
+</div>
+))}
+</div>
+);
+};
+
+## CSS for Better Visual Feedback
+
+/* Whisper Component Styles */
+
+.whispers {
+margin-top: 2rem;
+}
+
+.whisper {
+background: rgba(255, 255, 255, 0.1);
+backdrop-filter: blur(10px);
+border: 1px solid rgba(255, 255, 255, 0.2);
+border-radius: 12px;
+padding: 1rem;
+margin-bottom: 1rem;
+transition: all 0.3s ease;
+}
+
+.whisper:hover {
+background: rgba(255, 255, 255, 0.15);
+border-color: rgba(255, 255, 255, 0.3);
+}
+
+.whisper p {
+margin: 0 0 0.5rem 0;
+color: rgba(255, 255, 255, 0.9);
+line-height: 1.5;
+}
+
+.whisper-meta {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-top: 0.75rem;
+}
+
+.resonate-btn {
+display: flex;
+align-items: center;
+gap: 0.5rem;
+background: transparent;
+border: none;
+color: #007AFF;
+cursor: pointer;
+padding: 0.25rem 0.5rem;
+border-radius: 6px;
+transition: all 0.2s ease;
+font-size: 0.9rem;
+}
+
+.resonate-btn:hover {
+background: rgba(0, 122, 255, 0.1);
+transform: translateY(-1px);
+}
+
+.resonate-btn:active {
+transform: translateY(0) scale(0.95);
+}
+
+.resonate-btn.resonated {
+color: #007AFF;
+}
+
+.resonate-btn img {
+transition: transform 0.2s ease;
+}
+
+.resonate-btn:hover img {
+transform: scale(1.1);
+}
+
+/* Pulse animation when resonance count changes */
+@keyframes pulse-count {
+0% { transform: scale(1); }
+50% { transform: scale(1.2); color: #34C759; }
+100% { transform: scale(1); }
+}
+
+.resonate-btn span {
+transition: all 0.3s ease;
+}
+
+.resonate-btn.just-updated span {
+animation: pulse-count 0.5s ease;
+}
+
+## Updated Replit Agent Prompt
+
+```
+Fix resonance toggle logic and heart icon display for existing skyless dashboard:
+
+**RESONANCE LOGIC FIX:**
+- Currently throws error on second tap - should toggle instead
+- First tap: add resonance (heart fills, count increases)  
+- Second tap: remove resonance (heart empties, count decreases)
+- Update the API endpoint with proper toggle logic and error handling
+- Frontend should handle API response properly and update UI immediately
+
+**HEART ICON FIX:**
+- Use heart.png for empty/outline heart (not resonated)
+- Use heart-filled.png for filled heart (user has resonated) 
+- Heart should visually change immediately when tapped
+- Add subtle scale animation (1.1x) when filled
+- Ensure proper file paths: "/heart.png" and "/heart-filled.png"
+
+**API REQUIREMENTS:**
+- POST /api/whispers/:whisperId/resonate should toggle (not error)
+- Return: { success: true, resonated: boolean, new_count: number }
+- Handle all edge cases: missing whisper, invalid user, database errors
+- Include proper error messages and status codes
+
+**FRONTEND REQUIREMENTS:**  
+- Update UI immediately after successful API call
+- Show proper error messages if API fails
+- Use actual resonated state from API response (not local toggle)
+- Heart icon reflects actual database state
+
+**VISUAL REQUIREMENTS:**
+- Heart scales slightly (1.1x) when filled
+- Smooth transitions between states  
+- Count animates when changed
+- Maintain glassmorphic styling and blue accent colors
+
+Update the existing dashboard with proper toggle functionality and visual feedback.
+```
+
+**This fixes both the backend toggle logic and ensures the heart icons display correctly based on the actual resonance state!**

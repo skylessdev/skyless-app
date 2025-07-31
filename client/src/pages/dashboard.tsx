@@ -52,11 +52,11 @@ export default function Dashboard() {
 
   // Fetch whispers
   const { data: whispersData } = useQuery({
-    queryKey: ['/api/whispers'],
+    queryKey: ['/api/whispers', userId],
     queryFn: async () => {
-      const response = await fetch('/api/whispers');
+      const response = await fetch(`/api/whispers?userId=${userId}`);
       if (!response.ok) throw new Error('Failed to fetch whispers');
-      return response.json() as Promise<{ whispers: NetworkWhisper[] }>;
+      return response.json() as Promise<{ whispers: (NetworkWhisper & { userHasResonated: boolean })[] }>;
     },
     refetchInterval: 30000, // Refresh every 30 seconds
   });
@@ -91,7 +91,7 @@ export default function Dashboard() {
     },
   });
 
-  // Resonate with whisper mutation
+  // Toggle resonance with whisper mutation
   const resonateMutation = useMutation({
     mutationFn: async ({ whisperId }: { whisperId: number }) => {
       const response = await fetch(`/api/whispers/${whisperId}/resonate`, {
@@ -99,20 +99,23 @@ export default function Dashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId }),
       });
-      if (!response.ok) throw new Error('Failed to resonate');
+      if (!response.ok) throw new Error('Failed to toggle resonance');
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      toast({
+        title: data.resonated ? "Resonated!" : "Resonance removed",
+        description: data.message,
+      });
       queryClient.invalidateQueries({ queryKey: ['/api/whispers'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
     },
     onError: (error: any) => {
-      if (!error.message?.includes('Already resonated')) {
-        toast({
-          title: "Error",
-          description: "Failed to resonate with whisper",
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "Error",
+        description: "Failed to toggle resonance",
+        variant: "destructive",
+      });
     },
   });
 
@@ -336,11 +339,11 @@ export default function Dashboard() {
                         className="text-blue-400 hover:text-blue-300 transition-colors group flex items-center gap-1 p-2 rounded-md hover:bg-blue-400/10"
                       >
                         <img
-                          src="/heart.png"
-                          alt="Resonate"
+                          src={whisper.userHasResonated ? "/heart-filled.png" : "/heart.png"}
+                          alt={whisper.userHasResonated ? "Remove resonance" : "Resonate"}
                           width={20}
                           height={20}
-                          className="transition-all group-hover:scale-110"
+                          className={`transition-all group-hover:scale-110 ${whisper.userHasResonated ? 'opacity-100' : 'opacity-70'}`}
                         />
                         {whisper.resonanceCount}
                       </Button>

@@ -18,8 +18,13 @@ export interface IStorage {
   startUserSession(userId: number): Promise<UserSession>;
   createReflection(userId: number, content: string, isAnonymous?: boolean): Promise<Reflection>;
   getNetworkWhispers(limit?: number): Promise<NetworkWhisper[]>;
-  addWhisperResonance(userId: number, whisperId: number): Promise<WhisperResonance>;
-  removeWhisperResonance(userId: number, whisperId: number): Promise<boolean>;
+  toggleWhisperResonance(userId: number, whisperId: number): Promise<{
+    success: boolean;
+    resonated: boolean;
+    newCount: number;
+    message: string;
+  }>;
+  getWhispersWithUserResonance(userId: number, limit?: number): Promise<Array<NetworkWhisper & { userHasResonated: boolean }>>;
   updateUserMood(userId: number, mood: string): Promise<User>;
   updateUserVector(userId: number, vector: number[]): Promise<User>;
 }
@@ -62,18 +67,8 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(userSessions.sessionStart))
       .limit(1);
 
-    // Get recent network whispers
-    const whispers = await db
-      .select({
-        id: networkWhispers.id,
-        content: networkWhispers.content,
-        resonanceCount: networkWhispers.resonanceCount,
-        createdAt: networkWhispers.createdAt,
-      })
-      .from(networkWhispers)
-      .where(eq(networkWhispers.isActive, true))
-      .orderBy(desc(networkWhispers.createdAt))
-      .limit(3);
+    // Get recent network whispers with user resonance status
+    const whispers = await this.getWhispersWithUserResonance(userId, 3);
 
     // Calculate growth since last session
     let growthPercentage = 0;
@@ -170,7 +165,12 @@ export class DatabaseStorage implements IStorage {
       .limit(limit);
   }
 
-  async addWhisperResonance(userId: number, whisperId: number): Promise<WhisperResonance> {
+  async toggleWhisperResonance(userId: number, whisperId: number): Promise<{
+    success: boolean;
+    resonated: boolean;
+    newCount: number;
+    message: string;
+  }> {
     // Check if already resonated
     const existing = await db
       .select()
@@ -181,47 +181,83 @@ export class DatabaseStorage implements IStorage {
       ))
       .limit(1);
 
+    let resonated: boolean;
+    
     if (existing.length > 0) {
-      throw new Error('Already resonated with this whisper');
-    }
-
-    // Add resonance
-    const [resonance] = await db.insert(whisperResonances).values({
-      userId,
-      whisperId,
-      createdAt: new Date(),
-    }).returning();
-
-    // Update resonance count
-    await db.update(networkWhispers)
-      .set({ 
-        resonanceCount: sql`${networkWhispers.resonanceCount} + 1`
-      })
-      .where(eq(networkWhispers.id, whisperId));
-
-    return resonance;
-  }
-
-  async removeWhisperResonance(userId: number, whisperId: number): Promise<boolean> {
-    const deleted = await db
-      .delete(whisperResonances)
-      .where(and(
-        eq(whisperResonances.userId, userId),
-        eq(whisperResonances.whisperId, whisperId)
-      ))
-      .returning();
-
-    if (deleted.length > 0) {
+      // Remove resonance (un-resonate)
+      await db
+        .delete(whisperResonances)
+        .where(and(
+          eq(whisperResonances.userId, userId),
+          eq(whisperResonances.whisperId, whisperId)
+        ));
+      
       // Update resonance count
       await db.update(networkWhispers)
         .set({ 
           resonanceCount: sql`${networkWhispers.resonanceCount} - 1`
         })
         .where(eq(networkWhispers.id, whisperId));
-      return true;
+
+      resonated = false;
+    } else {
+      // Add resonance
+      await db.insert(whisperResonances).values({
+        userId,
+        whisperId,
+        createdAt: new Date(),
+      });
+
+      // Update resonance count
+      await db.update(networkWhispers)
+        .set({ 
+          resonanceCount: sql`${networkWhispers.resonanceCount} + 1`
+        })
+        .where(eq(networkWhispers.id, whisperId));
+
+      resonated = true;
     }
 
-    return false;
+    // Get updated whisper data
+    const [updatedWhisper] = await db
+      .select()
+      .from(networkWhispers)
+      .where(eq(networkWhispers.id, whisperId))
+      .limit(1);
+
+    return {
+      success: true,
+      resonated,
+      newCount: updatedWhisper.resonanceCount,
+      message: resonated ? "Resonance added" : "Resonance removed"
+    };
+  }
+
+  async getWhispersWithUserResonance(userId: number, limit: number = 5): Promise<Array<NetworkWhisper & { userHasResonated: boolean }>> {
+    const whispers = await db
+      .select({
+        id: networkWhispers.id,
+        content: networkWhispers.content,
+        sourceReflectionId: networkWhispers.sourceReflectionId,
+        resonanceScore: networkWhispers.resonanceScore,
+        resonanceCount: networkWhispers.resonanceCount,
+        createdAt: networkWhispers.createdAt,
+        isActive: networkWhispers.isActive,
+        userHasResonated: sql<boolean>`CASE WHEN ${whisperResonances.userId} IS NOT NULL THEN true ELSE false END`.as('user_has_resonated'),
+      })
+      .from(networkWhispers)
+      .leftJoin(
+        whisperResonances,
+        and(
+          eq(whisperResonances.whisperId, networkWhispers.id),
+          eq(whisperResonances.userId, userId)
+        )
+      )
+      .where(eq(networkWhispers.isActive, true))
+      .orderBy(desc(networkWhispers.createdAt))
+      .limit(limit);
+
+    return whispers;
   }
 
   async updateUserMood(userId: number, mood: string): Promise<User> {

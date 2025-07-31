@@ -159,15 +159,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/whispers", async (req, res) => {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
-      const whispers = await storage.getNetworkWhispers(limit);
-      res.json({ whispers });
+      const userId = req.query.userId ? parseInt(req.query.userId as string) : null;
+      
+      if (userId) {
+        const whispers = await storage.getWhispersWithUserResonance(userId, limit);
+        res.json({ whispers });
+      } else {
+        const whispers = await storage.getNetworkWhispers(limit);
+        res.json({ whispers });
+      }
     } catch (error) {
       console.error("Whispers fetch error:", error);
       res.status(500).json({ error: "Failed to fetch whispers" });
     }
   });
 
-  // POST /api/whispers/:whisperId/resonate - Add resonance to whisper
+  // POST /api/whispers/:whisperId/resonate - Toggle resonance on whisper
   app.post("/api/whispers/:whisperId/resonate", async (req, res) => {
     try {
       const whisperId = parseInt(req.params.whisperId);
@@ -177,36 +184,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid whisper ID or user ID" });
       }
 
-      await storage.addWhisperResonance(userId, whisperId);
-      res.json({ message: "Resonance added" });
+      const result = await storage.toggleWhisperResonance(userId, whisperId);
+      res.json(result);
     } catch (error) {
-      console.error("Resonance add error:", error);
-      if (error instanceof Error && error.message === "Already resonated with this whisper") {
-        return res.status(409).json({ error: error.message });
-      }
-      res.status(500).json({ error: "Failed to add resonance" });
-    }
-  });
-
-  // DELETE /api/whispers/:whisperId/resonate - Remove resonance from whisper
-  app.delete("/api/whispers/:whisperId/resonate", async (req, res) => {
-    try {
-      const whisperId = parseInt(req.params.whisperId);
-      const { userId } = req.body;
-
-      if (isNaN(whisperId) || !userId) {
-        return res.status(400).json({ error: "Invalid whisper ID or user ID" });
-      }
-
-      const removed = await storage.removeWhisperResonance(userId, whisperId);
-      if (removed) {
-        res.json({ message: "Resonance removed" });
-      } else {
-        res.status(404).json({ error: "Resonance not found" });
-      }
-    } catch (error) {
-      console.error("Resonance remove error:", error);
-      res.status(500).json({ error: "Failed to remove resonance" });
+      console.error("Resonance toggle error:", error);
+      res.status(500).json({ error: "Failed to toggle resonance" });
     }
   });
 
