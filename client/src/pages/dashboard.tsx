@@ -49,35 +49,36 @@ export default function Dashboard() {
   const queryClient = useQueryClient();
 
   // Fetch dashboard data
-  const { data: dashboardData, isLoading } = useQuery({
+  const { data: dashboardData, isLoading } = useQuery<DashboardData>({
     queryKey: ['/api/dashboard', userId],
     queryFn: async () => {
       const response = await fetch(`/api/dashboard/${userId}`);
       if (!response.ok) throw new Error('Failed to fetch dashboard data');
-      return response.json() as Promise<DashboardData>;
+      return response.json();
     },
+    enabled: !!userId,
   });
 
   // Fetch whispers
-  const { data: whispersData } = useQuery({
+  const { data: whispersData } = useQuery<{ whispers: (NetworkWhisper & { userHasResonated: boolean })[] }>({
     queryKey: ['/api/whispers', userId],
     queryFn: async () => {
       const response = await fetch(`/api/whispers?userId=${userId}`);
       if (!response.ok) throw new Error('Failed to fetch whispers');
-      return response.json() as Promise<{ whispers: (NetworkWhisper & { userHasResonated: boolean })[] }>;
+      return response.json();
     },
+    enabled: !!userId,
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   // Create reflection mutation
   const createReflectionMutation = useMutation({
     mutationFn: async (content: string) => {
-      const response = await fetch('/api/reflections', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, content, isAnonymous: true }),
+      const response = await apiRequest('POST', '/api/reflections', {
+        userId,
+        content,
+        isAnonymous: true,
       });
-      if (!response.ok) throw new Error('Failed to create reflection');
       return response.json();
     },
     onSuccess: () => {
@@ -102,12 +103,9 @@ export default function Dashboard() {
   // Toggle resonance with whisper mutation
   const resonateMutation = useMutation({
     mutationFn: async ({ whisperId }: { whisperId: number }) => {
-      const response = await fetch(`/api/whispers/${whisperId}/resonate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId }),
+      const response = await apiRequest('POST', `/api/whispers/${whisperId}/resonate`, {
+        userId,
       });
-      if (!response.ok) throw new Error('Failed to toggle resonance');
       return response.json();
     },
     onSuccess: (data) => {

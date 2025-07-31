@@ -13,6 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from '@/component
 import { useToast } from '@/hooks/use-toast';
 import { useWallet } from '@/hooks/use-wallet';
 import { apiRequest } from '@/lib/queryClient';
+import { Link } from 'wouter';
 
 const emailSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
