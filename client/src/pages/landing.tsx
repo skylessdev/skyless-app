@@ -107,7 +107,7 @@ export default function Landing() {
   }, [isConnected, address, isRegistering]);
 
   return (
-    <div className="min-h-screen bg-dark-bg text-white font-inter overflow-x-hidden">
+    <div className="min-h-screen bg-dark-bg text-white font-inter overflow-x-hidden relative">
       {/* Mobile Status Bar */}
       <div className="block sm:hidden px-6 py-2 text-sm font-medium">
         <div className="flex justify-between items-center">
@@ -140,7 +140,7 @@ export default function Landing() {
       </motion.header>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col items-center justify-center px-6 pb-20 space-y-8">
+      <main className="flex-1 flex flex-col items-center justify-start px-6 pt-20 pb-20 space-y-8">
         <AnimatePresence mode="wait">
           {currentView === 'landing' && (
             <motion.div
@@ -150,6 +150,7 @@ export default function Landing() {
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.8 }}
               className="flex flex-col items-center space-y-8"
+              style={{ marginTop: '15vh' }}
             >
               <Logo />
               <Button
@@ -346,9 +347,9 @@ export default function Landing() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6, delay: 0.3 }}
-        className="px-6 py-6 pb-safe"
+        className="absolute bottom-8 left-0 right-0 px-6 py-6"
       >
-        <div className="flex justify-center space-x-8 text-white/60">
+        <div className="flex justify-center space-x-8 text-white/50">
           <a href="/docs" className="hover:text-white transition-colors text-base tracking-wide">
             docs
           </a>

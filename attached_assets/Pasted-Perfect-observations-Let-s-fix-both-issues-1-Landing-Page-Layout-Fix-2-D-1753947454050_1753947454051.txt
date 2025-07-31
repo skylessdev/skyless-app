@@ -1,0 +1,62 @@
+Perfect observations! Let’s fix both issues:
+
+## 1. Landing Page Layout Fix​​​​​​​​​​​​​​​​
+
+## 2. Dashboard Dark Theme Fix​​​​​​​​​​​​​​​​
+
+## 3. Heart Icon Component Fix​​​​​​​​​​​​​​​​
+
+## Updated Replit Agent Prompt
+
+```
+Fix landing page layout and dashboard theming for existing skyless project:
+
+**LANDING PAGE FIXES:**
+- Shift all content down significantly 
+- Logo should appear around 25vh from top (not centered)
+- "enter" button in lower half of screen
+- Footer links "docs github xmtp" positioned as absolute footer near bottom
+- Use the CSS layout fixes provided above
+
+**DASHBOARD COMPLETE REDESIGN:**
+- Match landing page aesthetic: pure black background (#000000)
+- White/grayscale text with serif fonts (Georgia)
+- Only blue accents: buttons (#007AFF) and heart icons
+- Use glassmorphic cards: rgba(255,255,255,0.05) backgrounds
+- Remove all blue gradient backgrounds
+- Apply the dark theme CSS provided above
+
+**HEART ICONS:**
+- Use uploaded PNG files: heart.png and heart-filled.png
+- NOT SVG code - reference the actual image files
+- Display as: `<img src="/heart.png" />` and `<img src="/heart-filled.png" />`
+- Size: 20px width/height
+
+**DASHBOARD STRUCTURE:**
+```
+
+Your Space
+Connected via Wallet
+
+[Coherence Card] 53% Current vector strength
+[Growth Card] +0% Since last session  
+[Mood Card] Contemplative Current preference
+
+[Reflection Input] Share a reflection with the network…
+[Submit] [Skip]
+
+Network Whispers
+○ whisper content [heart icon] 0 7/30/2025
+○ whisper content [heart icon] 1 7/30/2025
+
+```
+**STYLING REQUIREMENTS:**
+- All cards use glassmorphic styling (transparent with blur)
+- Blue only for: submit buttons, heart icons when filled, accent colors
+- Everything else: black/white/gray grayscale
+- Maintain landing page font choices and spacing
+
+Make these visual fixes while keeping all existing functionality intact.
+```
+
+This will give you the proper dark aesthetic matching your landing page with strategic blue accents, and fix the heart icon implementation!​​​​​​​​​​​​​​​​

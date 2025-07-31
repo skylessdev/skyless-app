@@ -145,10 +145,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 text-white">
-      {/* Background Effects */}
-      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,rgba(59,130,246,0.1),transparent_50%)]" />
-      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(147,51,234,0.1),transparent_50%)]" />
+    <div className="min-h-screen bg-black text-white" style={{ fontFamily: 'Georgia, serif' }}>
       
       <div className="relative z-10 p-6 max-w-4xl mx-auto">
         {/* Header */}
@@ -159,23 +156,27 @@ export default function Dashboard() {
         >
           <div className="flex items-center gap-4">
             <Link href="/">
-              <Button variant="ghost" size="sm" className="text-blue-300 hover:text-blue-200">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="border border-white/20 text-white/70 hover:text-white hover:border-white/40 transition-all"
+              >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Landing
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+              <h1 className="text-2xl font-light text-white tracking-wide">
                 Your Space
               </h1>
-              <p className="text-blue-300/80 text-sm">
+              <p className="text-white/60 text-sm">
                 {dashboardData?.user.connectionType === 'wallet' ? 'Connected via Wallet' : 'Anonymous Explorer'}
               </p>
             </div>
           </div>
           
           {dashboardData?.lastVisit && (
-            <div className="text-right text-sm text-blue-300/60">
+            <div className="text-right text-sm text-white/40">
               Last visit: {new Date(dashboardData.lastVisit).toLocaleDateString()}
             </div>
           )}
@@ -188,53 +189,53 @@ export default function Dashboard() {
           transition={{ delay: 0.1 }}
           className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
         >
-          {/* Identity Vector Strength */}
-          <Card className="bg-white/5 backdrop-blur-xl border-white/10">
+          {/* Coherence */}
+          <Card className="bg-white/5 backdrop-blur-xl border-white/10 hover:bg-white/8 hover:border-white/20 transition-all">
             <CardContent className="p-6">
               <div className="flex items-center gap-3 mb-2">
-                <Sparkles className="w-5 h-5 text-blue-400" />
-                <h3 className="text-lg font-semibold">Coherence</h3>
+                <Sparkles className="w-5 h-5 text-white/70" />
+                <h3 className="text-lg font-light text-white/70">Coherence</h3>
               </div>
-              <div className="text-3xl font-bold text-blue-400">
+              <div className="text-3xl font-light text-white">
                 {calculateVectorStrength(dashboardData?.user.identityVector || [])}%
               </div>
-              <p className="text-blue-300/60 text-sm mt-1">
+              <p className="text-white/50 text-sm mt-1">
                 Current vector strength
               </p>
             </CardContent>
           </Card>
 
           {/* Growth */}
-          <Card className="bg-white/5 backdrop-blur-xl border-white/10">
+          <Card className="bg-white/5 backdrop-blur-xl border-white/10 hover:bg-white/8 hover:border-white/20 transition-all">
             <CardContent className="p-6">
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center">
-                  <div className="w-2 h-2 rounded-full bg-green-400" />
+                <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
+                  <div className="w-2 h-2 rounded-full bg-white/70" />
                 </div>
-                <h3 className="text-lg font-semibold">Growth</h3>
+                <h3 className="text-lg font-light text-white/70">Growth</h3>
               </div>
-              <div className="text-3xl font-bold text-green-400">
+              <div className="text-3xl font-light text-white">
                 +{dashboardData?.growthSinceLast || 0}%
               </div>
-              <p className="text-blue-300/60 text-sm mt-1">
+              <p className="text-white/50 text-sm mt-1">
                 Since last session
               </p>
             </CardContent>
           </Card>
 
           {/* Mood */}
-          <Card className="bg-white/5 backdrop-blur-xl border-white/10">
+          <Card className="bg-white/5 backdrop-blur-xl border-white/10 hover:bg-white/8 hover:border-white/20 transition-all">
             <CardContent className="p-6">
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center">
-                  <div className="w-2 h-2 rounded-full bg-purple-400" />
+                <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
+                  <div className="w-2 h-2 rounded-full bg-white/70" />
                 </div>
-                <h3 className="text-lg font-semibold">Mood</h3>
+                <h3 className="text-lg font-light text-white/70">Mood</h3>
               </div>
-              <div className="text-xl font-semibold text-purple-400 capitalize">
+              <div className="text-xl font-light text-white capitalize">
                 {dashboardData?.user.preferredMood || 'contemplative'}
               </div>
-              <p className="text-blue-300/60 text-sm mt-1">
+              <p className="text-white/50 text-sm mt-1">
                 Current preference
               </p>
             </CardContent>
@@ -249,12 +250,12 @@ export default function Dashboard() {
           className="mb-8"
         >
           {!showReflectionForm ? (
-            <Card className="bg-white/5 backdrop-blur-xl border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
+            <Card className="bg-white/5 backdrop-blur-xl border-white/10 cursor-pointer hover:bg-white/8 hover:border-white/20 transition-all">
               <CardContent className="p-6">
                 <Button
                   onClick={() => setShowReflectionForm(true)}
                   variant="ghost"
-                  className="w-full justify-start text-blue-300/60 hover:text-blue-200"
+                  className="w-full justify-start text-white/40 hover:text-white/70"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Share a reflection with the network...
@@ -268,11 +269,12 @@ export default function Dashboard() {
                   placeholder="What's on your mind? This will be shared anonymously with the network..."
                   value={reflectionContent}
                   onChange={(e) => setReflectionContent(e.target.value)}
-                  className="bg-white/5 border-white/20 text-white placeholder:text-blue-300/40 resize-none min-h-[100px] mb-4"
+                  className="bg-transparent border-white/20 text-white placeholder:text-white/40 resize-none min-h-[100px] mb-4 font-serif"
                   maxLength={500}
+                  style={{ fontFamily: 'Georgia, serif' }}
                 />
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-blue-300/40">
+                  <span className="text-xs text-white/40">
                     {reflectionContent.length}/500 characters
                   </span>
                   <div className="flex gap-2">
@@ -283,7 +285,7 @@ export default function Dashboard() {
                         setShowReflectionForm(false);
                         setReflectionContent('');
                       }}
-                      className="text-blue-300/60 hover:text-blue-200"
+                      className="border border-white/20 text-white/50 hover:text-white/80 hover:border-white/40"
                     >
                       Cancel
                     </Button>
@@ -291,7 +293,7 @@ export default function Dashboard() {
                       size="sm"
                       onClick={handleSubmitReflection}
                       disabled={!reflectionContent.trim() || createReflectionMutation.isPending}
-                      className="bg-blue-600 hover:bg-blue-500 text-white"
+                      className="bg-blue-600 hover:bg-blue-500 text-white border-0"
                     >
                       {createReflectionMutation.isPending ? 'Sharing...' : 'Share'}
                     </Button>
@@ -308,7 +310,7 @@ export default function Dashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <h2 className="text-xl font-semibold mb-4 text-blue-300">Network Whispers</h2>
+          <h2 className="text-xl font-light mb-4 text-white/80">Network Whispers</h2>
           <div className="space-y-4">
             {whispersData?.whispers?.map((whisper, index) => (
               <motion.div
@@ -317,13 +319,13 @@ export default function Dashboard() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.1 * index }}
               >
-                <Card className="bg-white/5 backdrop-blur-xl border-white/10 hover:bg-white/10 transition-colors">
+                <Card className="bg-white/5 backdrop-blur-xl border-white/10 hover:bg-white/8 hover:border-white/20 transition-all">
                   <CardContent className="p-6">
-                    <p className="text-blue-100 mb-4 leading-relaxed">
+                    <p className="text-white/90 mb-4 leading-relaxed font-serif" style={{ fontFamily: 'Georgia, serif' }}>
                       {whisper.content}
                     </p>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-blue-300/40">
+                      <span className="text-xs text-white/40">
                         {new Date(whisper.createdAt).toLocaleDateString()}
                       </span>
                       <Button
@@ -331,9 +333,15 @@ export default function Dashboard() {
                         size="sm"
                         onClick={() => handleResonate(whisper.id)}
                         disabled={resonateMutation.isPending}
-                        className="text-blue-300/60 hover:text-red-400 transition-colors group"
+                        className="text-blue-400 hover:text-blue-300 transition-colors group flex items-center gap-1 p-2 rounded-md hover:bg-blue-400/10"
                       >
-                        <Heart className="w-4 h-4 mr-1 group-hover:fill-current" />
+                        <img
+                          src="/heart.png"
+                          alt="Resonate"
+                          width={20}
+                          height={20}
+                          className="transition-all group-hover:scale-110"
+                        />
                         {whisper.resonanceCount}
                       </Button>
                     </div>
@@ -345,7 +353,7 @@ export default function Dashboard() {
             {(!whispersData?.whispers || whispersData.whispers.length === 0) && (
               <Card className="bg-white/5 backdrop-blur-xl border-white/10">
                 <CardContent className="p-8 text-center">
-                  <p className="text-blue-300/60">
+                  <p className="text-white/60 font-serif" style={{ fontFamily: 'Georgia, serif' }}>
                     The network is quiet right now. Share the first whisper?
                   </p>
                 </CardContent>
