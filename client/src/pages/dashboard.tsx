@@ -31,6 +31,7 @@ interface NetworkWhisper {
   content: string;
   resonanceCount: number;
   createdAt: string;
+  authorWalletAddress?: string;
 }
 
 export default function Dashboard() {
@@ -64,7 +65,7 @@ export default function Dashboard() {
     queryFn: async () => {
       const response = await fetch(`/api/whispers?userId=${userId}`);
       if (!response.ok) throw new Error('Failed to fetch whispers');
-      return response.json() as Promise<{ whispers: (NetworkWhisper & { userHasResonated: boolean })[] }>;
+      return response.json() as Promise<{ whispers: (NetworkWhisper & { userHasResonated: boolean; authorWalletAddress?: string })[] }>;
     },
     refetchInterval: 30000, // Refresh every 30 seconds
   });
@@ -342,9 +343,14 @@ export default function Dashboard() {
               >
                 <Card className="bg-white/5 backdrop-blur-xl border-white/10 hover:bg-white/8 hover:border-white/20 transition-all">
                   <CardContent className="p-6">
-                    <p className="text-white/90 mb-4 leading-relaxed font-serif" style={{ fontFamily: 'Georgia, serif' }}>
+                    <p className="text-white/90 mb-2 leading-relaxed font-serif" style={{ fontFamily: 'Georgia, serif' }}>
                       {whisper.content}
                     </p>
+                    {whisper.authorWalletAddress && (
+                      <p className="text-xs text-white/30 mb-4 font-mono">
+                        -{whisper.authorWalletAddress.slice(0, 6)}...{whisper.authorWalletAddress.slice(-4)}
+                      </p>
+                    )}
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-white/40">
                         {new Date(whisper.createdAt).toLocaleDateString()}

@@ -233,7 +233,7 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async getWhispersWithUserResonance(userId: number, limit: number = 5): Promise<Array<NetworkWhisper & { userHasResonated: boolean }>> {
+  async getWhispersWithUserResonance(userId: number, limit: number = 5): Promise<Array<NetworkWhisper & { userHasResonated: boolean; authorWalletAddress?: string }>> {
     const whispers = await db
       .select({
         id: networkWhispers.id,
@@ -244,8 +244,11 @@ export class DatabaseStorage implements IStorage {
         createdAt: networkWhispers.createdAt,
         isActive: networkWhispers.isActive,
         userHasResonated: sql<boolean>`CASE WHEN ${whisperResonances.userId} IS NOT NULL THEN true ELSE false END`.as('user_has_resonated'),
+        authorWalletAddress: users.walletAddress,
       })
       .from(networkWhispers)
+      .leftJoin(reflections, eq(reflections.id, networkWhispers.sourceReflectionId))
+      .leftJoin(users, eq(users.id, reflections.userId))
       .leftJoin(
         whisperResonances,
         and(
