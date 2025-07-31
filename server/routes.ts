@@ -152,6 +152,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = createReflectionSchema.parse(req.body);
       const { userId, content, isAnonymous = true } = validatedData;
 
+      // Verify user exists and session is valid
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(401).json({ error: "Invalid session" });
+      }
+
       const reflection = await storage.createReflection(userId, content, isAnonymous);
 
       res.json({ 
@@ -195,6 +201,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (isNaN(whisperId) || !userId) {
         return res.status(400).json({ error: "Invalid whisper ID or user ID" });
+      }
+
+      // Verify user exists and session is valid
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(401).json({ error: "Invalid session" });
       }
 
       const result = await storage.toggleWhisperResonance(userId, whisperId);
